@@ -5838,6 +5838,24 @@ class FunctionsTest(TestCase):
         result = functions.minMax({}, seriesList)
         self.assertEqual(result, expectedResult)
 
+    # test_consecutiveSecondsNonZero
+    def test_consecutiveSecondsNonZero(self):
+        seriesList = [
+            TimeSeries('servers.s1.queue_length', 0, 600, 60, [10, 10, 10, None, 10, 0, 1, 1, 0, 1])
+        ]
+        expected = TimeSeries('consecutiveSecondsNonZero(servers.s1.queue_length)', 0, 600, 60, [60, 120, 180, 180, 240, 0, 60, 120, 0, 60])
+
+        result = functions.consecutiveSecondsNonZero(
+            {
+                'startTime': datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
+                'endTime': datetime(1970, 1, 1, 0, 4, 0, 0, pytz.timezone(settings.TIME_ZONE)),
+                'localOnly': False,
+            },
+            seriesList
+        )
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], expected)
+
     def _build_requestContext(self, startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)), endTime=datetime(1970, 1, 1, 0, 59, 0, 0, pytz.timezone(settings.TIME_ZONE)), data=[], tzinfo=pytz.utc):
         """
         Helper method to create request contexts
