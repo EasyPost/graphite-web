@@ -52,3 +52,4 @@ whitenoise
 scandir
 urllib3
 six
+syslog-rfc5424-formatter
