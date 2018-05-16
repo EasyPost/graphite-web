@@ -13,7 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 import os, logging
-from logging.handlers import TimedRotatingFileHandler as Rotater
 try:
     from logging import NullHandler
 except ImportError as ie:  # py2.6
@@ -23,11 +22,12 @@ except ImportError as ie:  # py2.6
 
         def emit(self, record):
             pass
-try:
-    from logging import FileHandler
-except ImportError as ie:  # py2.6
-    from logging.handlers import FileHandler
+from logging.handlers import SysLogHandler
+from logging import StreamHandler
+import sys
+import socket
 from django.conf import settings
+import syslog_rfc5424_formatter
 
 logging.addLevelName(30,"rendering")
 logging.addLevelName(30,"cache")
@@ -60,11 +60,14 @@ class GraphiteLogger:
     if level is not None:
         logger.setLevel(level)
     if activate:  # if want to log this one
-        formatter = logging.Formatter(fmt='%(asctime)s.%(msecs)03d :: %(message)s',datefmt='%Y-%m-%d,%H:%M:%S')
-        if settings.LOG_ROTATION:  # if we want to rotate logs
-            handler = Rotater(log_file, when=when, backupCount=backupCount)
-        else:  # let someone else, e.g. logrotate, rotate the logs
-            handler = FileHandler(log_file)
+        if 'LOG_DGRAM_SYSLOG' in os.environ:
+            address = os.environ.get('LOG_DGRAM_SYSLOG')
+            socktype = socket.SOCK_DGRAM
+            handler = SysLogHandler(address, facility=SysLogHandler.LOG_DAEMON, socktype=socktype)
+            formatter = syslog_rfc5424_formatter.RFC5424Formatter('%(message)s')
+        else:
+            handler = StreamHandler(sys.stderr)
+            formatter = logging.Formatter(fmt='%(asctime)s.%(msecs)03d :: %(message)s',datefmt='%Y-%m-%d,%H:%M:%S')
         handler.setFormatter(formatter)
         logger.addHandler(handler)
     else:
