@@ -14,6 +14,9 @@ limitations under the License."""
 
 import os, logging
 from logging.handlers import TimedRotatingFileHandler as Rotater
+import socket
+from logging.handlers import SysLogHandler
+import syslog_rfc5424_formatter
 try:
     from logging import NullHandler
 except ImportError as ie:  # py2.6
@@ -64,7 +67,12 @@ class GraphiteLogger:
     if level is not None:
         logger.setLevel(level)
     if activate:  # if want to log this one
-        if log_file_name == '-':
+        if 'LOG_DGRAM_SYSLOG' in os.environ:
+            address = os.environ.get('LOG_DGRAM_SYSLOG')
+            socktype = socket.SOCK_DGRAM
+            handler = SysLogHandler(address, facility=SysLogHandler.LOG_DAEMON, socktype=socktype)
+            formatter = syslog_rfc5424_formatter.RFC5424Formatter('%(message)s')
+        elif log_file_name == '-':
             formatter = logging.Formatter(
                 fmt='[%(asctime)s.%(msecs)03d] %(name)s %(levelname)s %(message)s',
                 datefmt='%d/%b/%Y %H:%M:%S')
