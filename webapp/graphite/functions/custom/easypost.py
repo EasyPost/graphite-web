@@ -1,6 +1,7 @@
 from itertools import izip
 
-from graphite.functions import ParamTypes, Param, normalize
+from graphite.functions import ParamTypes, Param
+from graphite.render.functions import normalize
 from graphite.render.datalib import TimeSeries
 
 
@@ -85,18 +86,12 @@ def transformBelowValue(requestContext, seriesList, valueLimit, newValue):
     to NULLs
     """
 
-    def transform(v, d):
-        if v < valueLimit:
-            return newValue
-        else:
-            return v
-
     for series in seriesList:
         series.tags['transformBelowValue'] = valueLimit
         series.tags['transformBelowValueNewValue'] = newValue
         series.name = "transformBelowValue(%s,%g,%g)" % (series.name, valueLimit, newValue)
         series.pathExpression = series.name
-        values = [transform(v, d) for v, d in series]
+        values = [newValue if v < valueLimit else v for v in series]
         series[:len(series)] = values
     return seriesList
 
