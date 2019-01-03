@@ -1,8 +1,13 @@
-from itertools import izip
+import sys
 
 from graphite.functions import ParamTypes, Param
 from graphite.render.functions import normalize
 from graphite.render.datalib import TimeSeries
+
+if sys.version_info < (3, 0):
+    from itertools import izip
+else:
+    izip = zip
 
 
 def consecutiveNonZero(requestContext, *seriesLists):
