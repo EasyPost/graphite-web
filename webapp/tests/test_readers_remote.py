@@ -28,7 +28,7 @@ class RemoteReaderTests(TestCase):
                               bulk_query=['a.b.c.d'])
 
         self.assertIsNotNone(reader)
-        self.assertRegexpMatches(str(reader), "<RemoteReader\[.*\]: 127.0.0.1 a.b.c.d>")
+        self.assertRegexpMatches(str(reader), r"<RemoteReader\[.*\]: 127.0.0.1 a.b.c.d>")
         self.assertEqual(reader.get_intervals(), [])
 
     #
@@ -57,7 +57,8 @@ class RemoteReaderTests(TestCase):
         reader = RemoteReader(finder, {'intervals': [], 'path': 'a.b.c.d'})
 
         data = [
-                {'start': startTime,
+                {
+                 'start': startTime,
                  'step': 60,
                  'end': endTime,
                  'values': [1.0, 0.0, 1.0, 0.0, 1.0],
@@ -100,7 +101,8 @@ class RemoteReaderTests(TestCase):
         reader = RemoteReader(finder, {'intervals': [], 'path': 'a.b.c.d'}, bulk_query=['a.b.c.d'])
 
         data = [
-                {'start': startTime,
+                {
+                 'start': startTime,
                  'step': 60,
                  'end': endTime,
                  'values': [1.0, 0.0, 1.0, 0.0, 1.0],
@@ -163,7 +165,7 @@ class RemoteReaderTests(TestCase):
         )
         http_request.return_value = responseObject
 
-        with self.assertRaisesRegexp(Exception, 'Invalid render response from http://[^ ]+: KeyError\(\'name\',?\)'):
+        with self.assertRaisesRegexp(Exception, r'Invalid render response from http://[^ ]+: KeyError\(\'name\',?\)'):
           reader.fetch(startTime, endTime)
 
         # non-200 response
@@ -205,13 +207,15 @@ class RemoteReaderTests(TestCase):
         reader = RemoteReader(finder, {'intervals': [], 'path': 'a.b.c.d'}, bulk_query=['a.b.c.*'])
 
         data = [
-                {'start': startTime,
+                {
+                 'start': startTime,
                  'step': 60,
                  'end': endTime,
                  'values': [1.0, 0.0, 1.0, 0.0, 1.0],
                  'name': 'a.b.c.c'
                 },
-                {'start': startTime,
+                {
+                 'start': startTime,
                  'step': 60,
                  'end': endTime,
                  'values': [1.0, 0.0, 1.0, 0.0, 1.0],

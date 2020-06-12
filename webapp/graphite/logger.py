@@ -12,24 +12,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-import os, logging
+import os
+import logging
 from logging.handlers import TimedRotatingFileHandler as Rotater
+from logging import NullHandler, FileHandler, StreamHandler
+
 import socket
 from logging.handlers import SysLogHandler
 import syslog_rfc5424_formatter
-try:
-    from logging import NullHandler
-except ImportError as ie:  # py2.6
-    from logging import Handler
 
-    class NullHandler(Handler):
-
-        def emit(self, record):
-            pass
-try:
-    from logging import FileHandler, StreamHandler
-except ImportError as ie:  # py2.6
-    from logging.handlers import FileHandler, StreamHandler
 from django.conf import settings
 
 

@@ -19,10 +19,10 @@ import six.moves.http_client
 from datetime import datetime
 from time import time
 from random import shuffle
-from six.moves.urllib.parse import urlencode, urlsplit, urlunsplit
-from cgi import parse_qs
+from six.moves.urllib.parse import urlencode, urlsplit, urlunsplit, parse_qs
 
 from graphite.compat import HttpResponse
+from graphite.errors import InputParameterError, handleInputParameterError
 from graphite.user_util import getProfileByUsername
 from graphite.util import json, unpickle, pickle, msgpack, BytesIO
 from graphite.storage import extractForwardHeaders
@@ -46,9 +46,17 @@ from six.moves import zip
 loadFunctions()
 
 
+@handleInputParameterError
 def renderView(request):
   start = time()
-  (graphOptions, requestOptions) = parseOptions(request)
+
+  try:
+    # we consider exceptions thrown by the option
+    # parsing to be due to user input error
+    (graphOptions, requestOptions) = parseOptions(request)
+  except Exception as e:
+    raise InputParameterError(str(e))
+
   useCache = 'noCache' not in requestOptions
   cacheTimeout = requestOptions['cacheTimeout']
   # TODO: Make that a namedtuple or a class.
@@ -60,9 +68,11 @@ def renderView(request):
     'template' : requestOptions['template'],
     'tzinfo' : requestOptions['tzinfo'],
     'forwardHeaders': requestOptions['forwardHeaders'],
+    'sourceIdHeaders': requestOptions['sourceIdHeaders'],
     'data' : [],
     'prefetched' : {},
     'xFilesFactor' : requestOptions['xFilesFactor'],
+    'maxDataPoints' : requestOptions.get('maxDataPoints', None),
   }
   data = requestContext['data']
 
@@ -343,6 +353,7 @@ def parseOptions(request):
   cacheTimeout = int( queryParams.get('cacheTimeout', settings.DEFAULT_CACHE_DURATION) )
   requestOptions['targets'] = []
   requestOptions['forwardHeaders'] = extractForwardHeaders(request)
+  requestOptions['sourceIdHeaders'] = extractSourceIdHeaders(request)
 
   # Extract the targets out of the queryParams
   mytargets = []
@@ -450,6 +461,26 @@ def parseOptions(request):
   requestOptions['xFilesFactor'] = float( queryParams.get('xFilesFactor', settings.DEFAULT_XFILES_FACTOR) )
 
   return (graphOptions, requestOptions)
+
+
+# extract headers which get set by Grafana when issuing queries, to help identifying where a query came from.
+# user-defined headers from settings.INPUT_VALIDATION_SOURCE_ID_HEADERS also get extracted and mixed
+# with the standard Grafana headers.
+def extractSourceIdHeaders(request):
+    source_headers = {
+        'X-Grafana-Org-ID': 'grafana-org-id',
+        'X-Dashboard-ID': 'dashboard-id',
+        'X-Panel-ID': 'panel-id',
+    }
+    source_headers.update(settings.INPUT_VALIDATION_SOURCE_ID_HEADERS)
+
+    headers = {}
+    for hdr_name, log_name in source_headers.items():
+        value = request.META.get('HTTP_' + hdr_name.upper().replace('-', '_'))
+        if value:
+            headers[log_name] = value
+
+    return headers
 
 
 connectionPools = {}

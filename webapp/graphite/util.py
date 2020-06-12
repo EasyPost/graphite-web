@@ -130,7 +130,10 @@ def find_escaped_pattern_fields(pattern_string):
 
 def load_module(module_path, member=None):
   module_name = splitext(basename(module_path))[0]
-  module_file = open(module_path, 'U')
+  try:  # 'U' is default from Python 3.0 and deprecated since 3.9
+    module_file = open(module_path, 'U')
+  except ValueError:
+    module_file = open(module_path, 'rt')
   description = ('.py', 'U', imp.PY_SOURCE)
   module = imp.load_module(module_name, module_file, module_path, description)
   if member:
@@ -165,11 +168,11 @@ if not PY3:
 
     @classmethod
     def find_class(cls, module, name):
-      if not module in cls.PICKLE_SAFE:
+      if module not in cls.PICKLE_SAFE:
         raise pickle.UnpicklingError('Attempting to unpickle unsafe module %s' % module)
       __import__(module)
       mod = sys.modules[module]
-      if not name in cls.PICKLE_SAFE[module]:
+      if name not in cls.PICKLE_SAFE[module]:
         raise pickle.UnpicklingError('Attempting to unpickle unsafe class %s' % name)
       return getattr(mod, name)
 
@@ -198,11 +201,11 @@ else:
     }
 
     def find_class(self, module, name):
-      if not module in self.PICKLE_SAFE:
+      if module not in self.PICKLE_SAFE:
         raise pickle.UnpicklingError('Attempting to unpickle unsafe module %s' % module)
       __import__(module)
       mod = sys.modules[module]
-      if not name in self.PICKLE_SAFE[module]:
+      if name not in self.PICKLE_SAFE[module]:
         raise pickle.UnpicklingError('Attempting to unpickle unsafe class %s' % name)
       return getattr(mod, name)
 
@@ -280,7 +283,7 @@ def logtime(f):
   return wrapped_f
 
 
-class BufferedHTTPReader(io.IOBase):
+class BufferedHTTPReader(io.FileIO):
   def __init__(self, response, buffer_size=1048576):
     self.response = response
     self.buffer_size = buffer_size
@@ -366,3 +369,28 @@ def _jsonResponse(data, queryParams, status=200, encoder=None, default=None):
 def _jsonError(message, queryParams, status=500, encoder=None, default=None):
   return _jsonResponse(
     {'error': message}, queryParams, status=status, encoder=encoder, default=default)
+
+
+def parseHost(host_string):
+    s = host_string.strip()
+    bidx = s.rfind(']:')    # find closing bracket and following colon.
+    cidx = s.find(':')
+    if s.startswith('[') and bidx is not None:
+        server = s[1:bidx]
+        port = s[bidx + 2:]
+    elif cidx is not None:
+        server = s[:cidx]
+        port = s[cidx + 1:]
+    else:
+        raise ValueError("Invalid host string \"%s\"" % host_string)
+
+    if ':' in port:
+        port, _, instance = port.partition(':')
+    else:
+        instance = None
+
+    return server, int(port), instance
+
+
+def parseHosts(host_strings):
+    return [parseHost(host_string) for host_string in host_strings]

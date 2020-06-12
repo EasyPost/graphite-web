@@ -32,6 +32,7 @@ class RedisTagDB(BaseTagDB):
       host=settings.TAGDB_REDIS_HOST,
       port=settings.TAGDB_REDIS_PORT,
       db=settings.TAGDB_REDIS_DB,
+      password=settings.TAGDB_REDIS_PASSWORD,
       decode_responses=(sys.version_info[0] >= 3),
     )
 
@@ -130,7 +131,11 @@ class RedisTagDB(BaseTagDB):
     filters.sort(key=lambda a: operators.index(a[1]))
 
     for series in self.r.sunion(*['tags:' + tag + ':values:' + value for value in values]):
-      parsed = self.parse(series)
+      try:
+        parsed = self.parse(series)
+      except Exception:
+        continue
+
       matched = True
 
       for (tag, operator, spec) in filters:

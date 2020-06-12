@@ -28,7 +28,7 @@ except ImportError:  # Django < 1.10
 
 
 GRAPHITE_WEB_APP_SETTINGS_LOADED = False
-WEBAPP_VERSION = '1.1.5'
+WEBAPP_VERSION = '1.1.7'
 DEBUG = False
 JAVASCRIPT_DEBUG = False
 
@@ -124,7 +124,6 @@ RENDERING_HOSTS = []
 REMOTE_RENDER_CONNECT_TIMEOUT = 1.0
 
 #Miscellaneous settings
-SMTP_SERVER = "localhost"
 DOCUMENTATION_VERSION = 'latest' if 'dev' in WEBAPP_VERSION else WEBAPP_VERSION
 DOCUMENTATION_URL = 'https://graphite.readthedocs.io/en/{}/'.format(DOCUMENTATION_VERSION)
 ALLOW_ANONYMOUS_CLI = True
@@ -145,6 +144,7 @@ TAGDB_AUTOCOMPLETE_LIMIT = 100
 TAGDB_REDIS_HOST = 'localhost'
 TAGDB_REDIS_PORT = 6379
 TAGDB_REDIS_DB = 0
+TAGDB_REDIS_PASSWORD = ''
 
 TAGDB_HTTP_URL = ''
 TAGDB_HTTP_USER = ''
@@ -181,6 +181,20 @@ AUTHENTICATION_BACKENDS=[]
 
 # Django 1.5 requires this so we set a default but warn the user
 SECRET_KEY = 'UNSAFE_DEFAULT'
+
+# Input validation
+# - When False we still validate the received input parameters, but if validation
+#   detects an issue it only logs an error and doesn't directly reject the request
+# - When True we reject requests of which the input validation detected an issue with the
+#   provided arguments and return an error message to the user
+ENFORCE_INPUT_VALIDATION = False
+
+# headers which shall be added to log statements informing about invalid queries,
+# this is useful to identify where a query came from.
+# The dict is keyed by the header name and the associated value is a short description
+# of the header which will be used in the log statement, for example:
+# {'X-FORWARD-FOR': 'forwarded-for'}
+INPUT_VALIDATION_SOURCE_ID_HEADERS = {}
 
 # Django 1.5 requires this to be set. Here we default to prior behavior and allow all
 ALLOWED_HOSTS = [ '*' ]
@@ -291,7 +305,7 @@ if URL_PREFIX and not STATIC_URL.startswith(URL_PREFIX):
 # Default sqlite db file
 # This is set here so that a user-set STORAGE_DIR is available
 if 'sqlite3' in DATABASES.get('default',{}).get('ENGINE','') \
-    and not DATABASES.get('default',{}).get('NAME'):
+        and not DATABASES.get('default',{}).get('NAME'):
   DATABASES['default']['NAME'] = join(STORAGE_DIR, 'graphite.db')
 
 # Caching shortcuts
