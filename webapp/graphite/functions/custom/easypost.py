@@ -96,7 +96,7 @@ def transformBelowValue(requestContext, seriesList, valueLimit, newValue):
         series.tags['transformBelowValueNewValue'] = newValue
         series.name = "transformBelowValue(%s,%g,%g)" % (series.name, valueLimit, newValue)
         series.pathExpression = series.name
-        values = [newValue if v < valueLimit else v for v in series]
+        values = [newValue if ( v is not None and v < valueLimit ) else v for v in series]
         series[:len(series)] = values
     return seriesList
 
