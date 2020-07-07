@@ -885,7 +885,7 @@ class Graph:
         metaData = { }
 
       self.surface.finish()
-      svgData = str(self.surfaceData.getvalue())
+      svgData = self.surfaceData.getvalue().decode('utf-8')
       self.surfaceData.close()
 
       svgData = svgData.replace('pt"', 'px"', 2) # we expect height/width in pixels, not points
